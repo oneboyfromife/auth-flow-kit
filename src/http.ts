@@ -1,4 +1,21 @@
-import { EndpointsConfig } from "./types";
+/*
+ This file contains the low-level HTTP utilities used internally by
+ auth-flow-kit to communicate with the backend.
+ 
+ It provides:
+  - makeURL: safely joins baseURL + endpoint path
+  - getStoredAccessToken: reads the JWT from localStorage
+  - setStoredAccessToken: stores/removes the JWT
+  - httpJSON: wrapper around fetch with JSON + optional auth header
+ 
+ NOTES FOR DEVELOPERS USING THE LIBRARY:
+ You do NOT need to import or modify anything in this file.
+ It is an internal helper used by the AuthProvider and auth screens.
+ 
+ This keeps the library lightweight, predictable,
+ and familiar to developers used to Redux Toolkit-style authentication.
+ 
+ */
 
 export function makeURL(baseURL: string, path: string) {
   return `${baseURL.replace(/\/$/, "")}${
@@ -19,7 +36,7 @@ export function setStoredAccessToken(token: string | null) {
     if (token) localStorage.setItem("afk_access_token", token);
     else localStorage.removeItem("afk_access_token");
   } catch {
-    // ignore storage errors
+    // ignore storage errors (Safari private mode, etc.)
   }
 }
 
@@ -31,38 +48,22 @@ export async function httpJSON<T>(
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
+
+  // Add Authorization header only if requested
   if (withAuth) {
     const tok = getStoredAccessToken();
     if (tok) headers["Authorization"] = `Bearer ${tok}`;
   }
+
   const res = await fetch(url, {
     ...opts,
     headers: { ...headers, ...(opts.headers || {}) },
   });
+
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(text || `HTTP ${res.status}`);
   }
+
   return res.json() as Promise<T>;
-}
-
-export async function tryRefreshToken(
-  baseURL: string,
-  endpoints: EndpointsConfig
-): Promise<string | null> {
-  if (!endpoints.refresh) return null;
-  const refreshToken = localStorage.getItem("afk_refresh_token");
-  if (!refreshToken) return null;
-
-  try {
-    const url = makeURL(baseURL, endpoints.refresh);
-    const next = await httpJSON<{ accessToken: string }>(url, {
-      method: "POST",
-      body: JSON.stringify({ refreshToken }),
-    });
-    setStoredAccessToken(next.accessToken);
-    return next.accessToken;
-  } catch {
-    return null;
-  }
 }

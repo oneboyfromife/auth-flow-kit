@@ -15,7 +15,6 @@ export default function SignupScreen() {
     setSubmitting(true);
     setError(null);
 
-    // 🔥 PRE CHECK — STOP EVERYTHING IF TRIM FAILS
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
     const trimmedName = name.trim();
@@ -23,7 +22,7 @@ export default function SignupScreen() {
     if (!trimmedEmail || !trimmedPassword || !trimmedName) {
       setError("Email and password cannot be empty.");
       setSubmitting(false);
-      return; // ❗ STOP FUNCTION BEFORE LOGIN() TRIGGERS
+      return;
     }
 
     try {
@@ -204,8 +203,6 @@ export default function SignupScreen() {
           width: "100%",
           padding: "14px 20px",
           borderRadius: 12,
-
-          // SAME GRADIENT AS LOGIN
           background: submitting
             ? "linear-gradient(90deg, #b2bdfd, #8da0ff)"
             : "linear-gradient(90deg, #5353aaff, #060f22ff)",

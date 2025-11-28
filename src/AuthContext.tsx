@@ -1,3 +1,13 @@
+/* 
+Developers using this library should wrap their app with:
+  <AuthProvider config={...}>
+    <App />
+  </AuthProvider>
+ 
+  Then they can access auth anywhere with:
+  const { user, login, logout, getToken } = useAuth();
+*/
+
 import React, {
   createContext,
   useContext,
@@ -5,18 +15,19 @@ import React, {
   useMemo,
   useState,
 } from "react";
+
 import {
   AuthContextType,
   AuthProviderConfig,
   StandardAuthResponse,
   User,
 } from "./types";
+
 import {
   httpJSON,
   makeURL,
   setStoredAccessToken,
   getStoredAccessToken,
-  tryRefreshToken,
 } from "./http";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,89 +49,70 @@ export function AuthProvider({
 
   const getToken = () => getStoredAccessToken();
 
-  // Load session on mount
+  // Restore user from localStorage on app load
   useEffect(() => {
-    const init = async () => {
-      setLoading(true);
-      const token = getStoredAccessToken();
-      if (!token) {
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-      try {
-        const meURL = makeURL(baseURL, endpoints.me);
-        const profile = await httpJSON<User>(meURL, {}, true);
-        setUser(profile);
-      } catch (err) {
-        // try refresh if available
-        const refreshed = await tryRefreshToken(baseURL, endpoints);
-        if (refreshed) {
-          try {
-            const meURL = makeURL(baseURL, endpoints.me);
-            const profile = await httpJSON<User>(meURL, {}, true);
-            setUser(profile);
-          } catch {
-            setStoredAccessToken(null);
-            localStorage.removeItem("afk_refresh_token");
-            setUser(null);
-          }
-        } else {
-          setStoredAccessToken(null);
-          localStorage.removeItem("afk_refresh_token");
-          setUser(null);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    void init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const savedUser = localStorage.getItem("afk_user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    setLoading(false);
   }, []);
 
+  // LOGIN
   const login: AuthContextType["login"] = async (email, password) => {
     const url = makeURL(baseURL, endpoints.login);
+
     const res = await httpJSON<StandardAuthResponse>(url, {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
 
-    // store tokens
+    // store token + user
     setStoredAccessToken(res.accessToken);
-    if (res.refreshToken)
-      localStorage.setItem("afk_refresh_token", res.refreshToken);
+    localStorage.setItem("afk_user", JSON.stringify(res.user));
 
-    // set user
     setUser(res.user);
 
     if (onLoginSuccess) onLoginSuccess();
   };
 
+  // SIGNUP
   const signup: AuthContextType["signup"] = async (payload) => {
     const url = makeURL(baseURL, endpoints.signup);
+
     const res = await httpJSON<StandardAuthResponse>(url, {
       method: "POST",
       body: JSON.stringify(payload),
     });
 
     setStoredAccessToken(res.accessToken);
-    if (res.refreshToken)
-      localStorage.setItem("afk_refresh_token", res.refreshToken);
+    localStorage.setItem("afk_user", JSON.stringify(res.user));
+
     setUser(res.user);
 
     if (onLoginSuccess) onLoginSuccess();
   };
 
+  // LOGOUT
   const logout = () => {
     setStoredAccessToken(null);
-    localStorage.removeItem("afk_refresh_token");
+    localStorage.removeItem("afk_user");
     setUser(null);
+
     if (onLogout) onLogout();
   };
 
   const value = useMemo<AuthContextType>(
-    () => ({ user, loading, login, signup, logout, getToken }),
-    [user, loading]
+    () => ({
+      user,
+      loading,
+      login,
+      signup,
+      logout,
+      getToken,
+      config,
+    }),
+    [user, loading, config]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,17 +1,28 @@
 # @kendevelops/auth-flow-kit
 
-A lightweight authentication toolkit for **React** and **Next.js 13–16 (App Router)**.
+A lightweight authentication toolkit for **React** and **Next.js 13–16 (App Router)** that extends beyond tools like **ReduxToolkit** and **Zustand** style global state management for authentication, as it also comes with prebuilt UI screens and a globally accessible `useAuth()` hook.
 
-## Features
+## ⭐ What This Library Really Is
 
-- 🔐 **AuthProvider** manages login state, tokens, and user session
-- 🎯 **useAuth() hook** gives access to user, login(), logout(), and more
-- 🛡️ **Protected** helps guard pages and components
-- 📄 Prebuilt **LoginScreen** and **SignupScreen**
-- ⚡ Fully typed (TypeScript)
-- 🌐 Backend agnostic
+**auth-flow-kit** is not a traditional backend-driven auth framework:
 
-Made for modern React and Next.js applications.
+- Authentication state is global
+- User + token are stored in localStorage
+- State is restored automatically when the user refreshes the page
+- No extra network calls are needed to reload the session
+- You can access auth from _any component_:
+
+```tsx
+const { user, login, logout, getToken } = useAuth();
+```
+
+Plus, you get **prebuilt UI screens**:
+
+- `<LoginScreen />`
+- `<SignupScreen />`
+- `<PasswordResetScreen />`
+
+And a simple `<Protected>` wrapper to guard pages.
 
 ---
 
@@ -29,9 +40,9 @@ bun add @kendevelops/auth-flow-kit
 
 ---
 
-# 🚀 Usage (Next.js 16 App Router)
+# 🚀 Usage (Next.js App Router)
 
-Next.js layouts are Server Components, but authentication must run on the client. So we wrap the AuthProvider inside a small client component.
+Next.js layouts are server components, so we wrap the provider in a small client component.
 
 ## 1. Create `app/AuthProviderClient.tsx`
 
@@ -52,8 +63,7 @@ export default function AuthProviderClient({
         endpoints: {
           login: "/auth/login",
           signup: "/auth/signup",
-          refresh: "/auth/refresh",
-          me: "/auth/me",
+          forgot: "/auth/forgot",
         },
         onLoginSuccess: () => (window.location.href = "/dashboard"),
         onLogout: () => (window.location.href = "/login"),
@@ -67,20 +77,11 @@ export default function AuthProviderClient({
 
 ---
 
-## 2. Wrap your app with AuthProvider (Server Layout)
-
-`app/layout.tsx`:
+## 2. Wrap your app in `app/layout.tsx`
 
 ```tsx
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
 import AuthProviderClient from "./AuthProviderClient";
-
-export const metadata: Metadata = {
-  title: "Auth Demo",
-  description: "Auth Flow Kit Example",
-};
+import "./globals.css";
 
 export default function RootLayout({
   children,
@@ -99,13 +100,10 @@ export default function RootLayout({
 
 ---
 
-## 3. Create Login Page
-
-`app/login/page.tsx`
+## 3. Login Page
 
 ```tsx
 "use client";
-
 import { LoginScreen } from "@kendevelops/auth-flow-kit";
 
 export default function LoginPage() {
@@ -115,13 +113,10 @@ export default function LoginPage() {
 
 ---
 
-## 4. Create Signup Page
-
-`app/signup/page.tsx`
+## 4. Signup Page
 
 ```tsx
 "use client";
-
 import { SignupScreen } from "@kendevelops/auth-flow-kit";
 
 export default function SignupPage() {
@@ -131,13 +126,10 @@ export default function SignupPage() {
 
 ---
 
-## 5. Create Protected Dashboard Page
-
-`app/dashboard/page.tsx`
+## 5. Protected Dashboard Page
 
 ```tsx
 "use client";
-
 import { Protected, useAuth } from "@kendevelops/auth-flow-kit";
 
 export default function DashboardPage() {
@@ -160,7 +152,7 @@ function Dashboard() {
           <button onClick={logout}>Logout</button>
         </>
       ) : (
-        <p>No user loaded</p>
+        <p>No user loaded.</p>
       )}
     </div>
   );
@@ -169,96 +161,58 @@ function Dashboard() {
 
 ---
 
-# 🧠 API Requirements
+# 🧠 Developer Experience (DX)
 
-Your backend must return the following format:
-
-### Login — `POST /auth/login`
-
-```json
-{
-  "accessToken": "jwt123",
-  "refreshToken": "refresh123",
-  "user": {
-    "id": 1,
-    "name": "Kenneth",
-    "email": "kenny@example.com"
-  }
-}
-```
-
-### Get Current User — `GET /auth/me`
-
-```json
-{
-  "id": 1,
-  "name": "Kenneth",
-  "email": "kenny@example.com"
-}
-```
-
-Works with Express, Nest, Django, Laravel, Go, and more.
-
----
-
-# ⚙️ Custom Response Mapping
-
-If your backend returns different field names:
+Because auth behaves like a global store, you can access it anywhere:
 
 ```tsx
-<AuthProvider
-  config={{
-    mapLoginResponse: (res) => ({
-      accessToken: res.token,
-      user: {
-        id: res.data.user_id,
-        name: res.data.full_name,
-        email: res.data.mail,
-      }
-    }),
-    mapMeResponse: (res) => ({
-      id: res.data.user_id,
-      name: res.data.full_name,
-      email: res.data.mail
-    }),
-  }}
->
+const { user, login, logout, getToken, loading } = useAuth();
 ```
+
+This means:
+
+### ✔ Global state, just like Redux or Zustand
+
+### ✔ No need for reducers, slices, or stores
+
+### ✔ No extra setup
+
+### ✔ No API calls on refresh — state is restored instantly
+
+Your UI automatically updates when the user logs in, signs up, or logs out.
 
 ---
 
-# 🔒 Protecting Components
+# 🔒 Protecting Routes and Components
 
 ```tsx
 <Protected>
-  <SecretComponent />
+  <SecretSection />
 </Protected>
 ```
 
-Automatically redirects to `/login` if user is not authenticated.
+If the user is not authenticated, they are redirected to `/login`.
 
 ---
 
-# 🔄 Using `useAuth()`
+# 📄 Using `useAuth()` in any component
 
 ```tsx
 "use client";
 import { useAuth } from "@kendevelops/auth-flow-kit";
 
 export default function NavBar() {
-  const { user, login, logout, loading } = useAuth();
-
-  if (loading) return null;
+  const { user, logout } = useAuth();
 
   return (
     <nav>
       {user ? (
         <>
-          <span>Welcome {user.name}</span>
+          <span>Hi {user.name}</span>
           <button onClick={logout}>Logout</button>
         </>
       ) : (
-        <button onClick={() => login("email", "password")}>Login</button>
+        <a href="/login">Login</a>
       )}
     </nav>
   );
@@ -267,14 +221,10 @@ export default function NavBar() {
 
 ---
 
-# 🌐 React (Non Next.js) Usage
+# 🌐 React (Non-Next.js) Usage
 
 ```tsx
-import {
-  AuthProvider,
-  LoginScreen,
-  Protected,
-} from "@kendevelops/auth-flow-kit";
+import { AuthProvider, LoginScreen } from "@kendevelops/auth-flow-kit";
 
 export default function App() {
   return (
@@ -284,7 +234,7 @@ export default function App() {
         endpoints: {
           login: "/auth/login",
           signup: "/auth/signup",
-          me: "/auth/me",
+          forgot: "/auth/forgot",
         },
       }}
     >
@@ -293,3 +243,19 @@ export default function App() {
   );
 }
 ```
+
+---
+
+# 🎉 Summary
+
+**auth-flow-kit** provides:
+
+- Global auth state (Redux/Zustand style)
+- Prebuilt auth UI (Login, Signup, Reset)
+- Easy `useAuth()` hook access
+- Simple endpoint requirements
+- Works in both Next.js and React
+
+A clean, modern solution for developers who want authentication without complexity.
+
+---

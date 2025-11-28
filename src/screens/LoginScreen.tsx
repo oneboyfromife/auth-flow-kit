@@ -11,7 +11,6 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [showReset, setShowReset] = useState(false);
 
-  // Show Reset Form
   if (showReset) {
     return (
       <div style={{ animation: "fade .2s" }}>
@@ -39,14 +38,13 @@ export default function LoginScreen() {
     setSubmitting(true);
     setError(null);
 
-    // 🔥 PRE CHECK — STOP EVERYTHING IF TRIM FAILS
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
 
     if (!trimmedEmail || !trimmedPassword) {
       setError("Email and password cannot be empty.");
       setSubmitting(false);
-      return; // ❗ STOP FUNCTION BEFORE LOGIN() TRIGGERS
+      return;
     }
 
     try {
@@ -68,7 +66,6 @@ export default function LoginScreen() {
         borderRadius: 20,
         fontFamily: "Inter, sans-serif",
 
-        // GLASS EFFECT
         background: "rgba(255, 255, 255, 0.25)",
         backdropFilter: "blur(14px)",
         WebkitBackdropFilter: "blur(14px)",
@@ -91,7 +88,6 @@ export default function LoginScreen() {
         Welcome Back 👋
       </h2>
 
-      {/* EMAIL FIELD */}
       <div style={{ position: "relative", marginBottom: 26 }}>
         <label
           style={{
@@ -134,7 +130,6 @@ export default function LoginScreen() {
         />
       </div>
 
-      {/* PASSWORD FIELD */}
       <div style={{ position: "relative", marginBottom: 10 }}>
         <label
           style={{
@@ -177,7 +172,6 @@ export default function LoginScreen() {
         />
       </div>
 
-      {/* FORGOT PASSWORD */}
       <p
         onClick={() => setShowReset(true)}
         style={{
@@ -200,7 +194,6 @@ export default function LoginScreen() {
           padding: "14px 20px",
           borderRadius: 12,
 
-          // 🔥 GRADIENT BUTTON
           background: submitting
             ? "linear-gradient(90deg, #b2bdfd, #8da0ff)"
             : "linear-gradient(90deg, #5353aaff, #060f22ff)",

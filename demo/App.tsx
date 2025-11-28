@@ -1,16 +1,42 @@
 "use client";
 
+/* 
+This demo shows how to use auth-flow-kit in the simplest way possible.
+You can switch between Login, Signup, and Reset screens, and once a user logs in, the Dashboard is shown automatically. 
+The dashboard is protected, uses global auth state, and can only be reached after authentication.
+*/
+
 import {
   AuthProvider,
   LoginScreen,
   SignupScreen,
+  PasswordResetScreen,
   Protected,
   useAuth,
 } from "../src";
+
 import { useState } from "react";
 
 export default function App() {
-  const [page, setPage] = useState<"login" | "signup" | "dashboard">("login");
+  const [page, setPage] = useState("login");
+
+  const activeStyle = {
+    padding: "8px 16px",
+    background: "#002A80",
+    color: "white",
+    border: "1px solid #ccc",
+    borderRadius: 6,
+    cursor: "pointer",
+  };
+
+  const inactiveStyle = {
+    padding: "8px 16px",
+    background: "#eee",
+    color: "black",
+    border: "1px solid #ccc",
+    borderRadius: 6,
+    cursor: "pointer",
+  };
 
   return (
     <AuthProvider
@@ -19,154 +45,73 @@ export default function App() {
         endpoints: {
           login: "/auth/login",
           signup: "/auth/signup",
-          refresh: "/auth/refresh",
-          me: "/auth/me",
+          forgot: "/auth/forgot",
         },
+        onLoginSuccess: () => setPage("dashboard"),
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          display: "flex",
-          left: 0,
-          right: 0,
-          top: 0,
-          bottom: 0,
-          justifyContent: "center",
-          alignItems: "center",
-          background: "white",
-          fontFamily: "Arial, sans-serif",
-          color: "white",
-          overflow: "hidden",
-        }}
-      >
+      <div style={{ maxWidth: 420, margin: "50px auto", textAlign: "center" }}>
         <div
           style={{
-            width: "100%",
-            maxWidth: 420,
-            padding: 20,
-            borderRadius: 12,
-            background: "white",
             display: "flex",
-            flexDirection: "column",
-            maxHeight: "unset",
-            overflow: "visible",
+            gap: 10,
+            justifyContent: "center",
+            marginBottom: 20,
           }}
         >
-          {/* Simple Navigation */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexDirection: "row",
-              paddingLeft: 60,
-              paddingRight: 60,
-            }}
+          <button
+            onClick={() => setPage("login")}
+            style={page === "login" ? activeStyle : inactiveStyle}
           >
-            <div
-              onClick={() => setPage("login")}
-              style={{
-                padding: "12px 18px",
-                borderRadius: 8,
-                background:
-                  page === "login"
-                    ? "linear-gradient(90deg, #5353aaff, #060f22ff)"
-                    : "#f3f4f6",
-                color: page === "login" ? "white" : "#111827",
-                cursor: "pointer",
-                fontSize: 14,
-              }}
-            >
-              Login
-            </div>
+            Login
+          </button>
 
-            <div
-              onClick={() => setPage("signup")}
-              style={{
-                padding: "12px 18px",
-                borderRadius: 8,
-                background:
-                  page === "signup"
-                    ? "linear-gradient(90deg, #5353aaff, #060f22ff)"
-                    : "#f3f4f6",
-                color: page === "signup" ? "white" : "#111827",
-                cursor: "pointer",
-                fontSize: 14,
-              }}
-            >
-              Signup
-            </div>
+          <button
+            onClick={() => setPage("signup")}
+            style={page === "signup" ? activeStyle : inactiveStyle}
+          >
+            Signup
+          </button>
 
-            <div
-              onClick={() => setPage("dashboard")}
-              style={{
-                padding: "12px 18px",
-                borderRadius: 8,
-                background:
-                  page === "dashboard"
-                    ? "linear-gradient(90deg, #5353aaff, #060f22ff)"
-                    : "#f3f4f6",
-                color: page === "dashboard" ? "white" : "#111827",
-                cursor: "pointer",
-                fontSize: 14,
-              }}
-            >
-              Dashboard
-            </div>
-          </div>
-
-          {/* Pages */}
-          {page === "login" && <LoginScreen />}
-          {page === "signup" && <SignupScreen />}
-
-          {page === "dashboard" && (
-            <Protected>
-              <Dashboard />
-            </Protected>
-          )}
+          <button
+            onClick={() => setPage("reset")}
+            style={page === "reset" ? activeStyle : inactiveStyle}
+          >
+            Reset
+          </button>
         </div>
+
+        {/* Screens */}
+        {page === "login" && <LoginScreen />}
+        {page === "signup" && <SignupScreen />}
+        {page === "reset" && <PasswordResetScreen />}
+
+        {page === "dashboard" && (
+          <Protected>
+            <Dashboard />
+          </Protected>
+        )}
       </div>
     </AuthProvider>
   );
 }
 
-/* Simple Dashboard */
 function Dashboard() {
   const { user, logout } = useAuth();
 
   return (
-    <div
-      style={{
-        padding: 16,
-        background: "#f8fafc",
-        borderRadius: 8,
-        border: "1px solid #e5e7eb",
-      }}
-    >
-      <h3 style={{ marginTop: 0, color: "#111827" }}>Dashboard</h3>
+    <div style={{ padding: 20, border: "1px solid #ddd", borderRadius: 8 }}>
+      <h3>Dashboard</h3>
 
       {user ? (
         <>
-          <p style={{ color: "#1f2937" }}>
-            Logged in as <strong>{user.name}</strong>
+          <p>
+            Welcome <strong>{user.name}</strong> 🎉
           </p>
-          <button
-            onClick={logout}
-            style={{
-              padding: "8px 14px",
-              background: "#ef4444",
-              color: "white",
-              border: "none",
-              borderRadius: 6,
-              cursor: "pointer",
-            }}
-          >
-            Logout
-          </button>
+          <button onClick={logout}>Logout</button>
         </>
       ) : (
-        <p style={{ color: "#6b7280" }}>No user loaded.</p>
+        <p>No user loaded.</p>
       )}
     </div>
   );

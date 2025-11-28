@@ -7,13 +7,12 @@ export default function Protected({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && !user) {
-      // Simple client redirect
       window.location.href = "/login";
     }
   }, [loading, user]);
 
   if (loading) return <div>Loading...</div>;
-  if (!user) return null; // will redirect
+  if (!user) return null;
 
   return <>{children}</>;
 }
