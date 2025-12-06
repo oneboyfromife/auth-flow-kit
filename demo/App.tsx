@@ -22,7 +22,7 @@ export default function App() {
 
   const activeStyle = {
     padding: "8px 16px",
-    background: "#002A80",
+    background: "linear-gradient(90deg, #5353aaff, #060f22ff)",
     color: "white",
     border: "1px solid #ccc",
     borderRadius: 6,
@@ -59,26 +59,26 @@ export default function App() {
             marginBottom: 20,
           }}
         >
-          <button
+          <div
             onClick={() => setPage("login")}
             style={page === "login" ? activeStyle : inactiveStyle}
           >
             Login
-          </button>
+          </div>
 
-          <button
+          <div
             onClick={() => setPage("signup")}
             style={page === "signup" ? activeStyle : inactiveStyle}
           >
             Signup
-          </button>
+          </div>
 
-          <button
+          <div
             onClick={() => setPage("reset")}
             style={page === "reset" ? activeStyle : inactiveStyle}
           >
             Reset
-          </button>
+          </div>
         </div>
 
         {/* Screens */}
