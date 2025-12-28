@@ -4,6 +4,8 @@ import { useAuth } from "../AuthContext";
 import { httpJSON, makeURL } from "../http";
 
 export default function PasswordResetScreen() {
+  const { config } = useAuth(); // ✅ hook at top level
+
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -13,9 +15,6 @@ export default function PasswordResetScreen() {
     setError(null);
 
     try {
-      // read from AuthProvider config
-      const { config } = useAuth();
-
       const url = makeURL(config.baseURL, config.endpoints.forgot);
 
       await httpJSON(url, {

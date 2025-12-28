@@ -3,14 +3,15 @@
 /*
 Protected component
 
-Wraps authenticated routes and automatically redirects unauthenticated users.
+Wraps authenticated content and prevents rendering when unauthenticated.
 
-The `redirectTo` prop allows consumers of the library to define their own
-authentication entry point (e.g. /login, /signin, /auth/login) without
-modifying internal library code.
+IMPORTANT:
+This component does NOT hard-redirect by default.
+Navigation should be handled by the host application (router or state).
 
-This improves flexibility while preserving backward compatibility🙂.
- */
+If redirectTo is provided AND the host app supports routing,
+a redirect will occur.
+*/
 
 import React, { useEffect } from "react";
 import { useAuth } from "./AuthContext";
@@ -20,14 +21,12 @@ type ProtectedProps = {
   redirectTo?: string;
 };
 
-export default function Protected({
-  children,
-  redirectTo = "/login",
-}: ProtectedProps) {
+export default function Protected({ children, redirectTo }: ProtectedProps) {
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !user && redirectTo) {
+      // Redirect ONLY if consumer explicitly opts in
       window.location.href = redirectTo;
     }
   }, [loading, user, redirectTo]);

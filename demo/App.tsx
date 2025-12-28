@@ -41,7 +41,7 @@ export default function App() {
   return (
     <AuthProvider
       config={{
-        baseURL: "http://localhost:4000",
+        baseURL: "http://localhost:10000",
         endpoints: {
           login: "/auth/login",
           signup: "/auth/signup",
