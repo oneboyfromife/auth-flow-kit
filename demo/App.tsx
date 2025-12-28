@@ -1,9 +1,7 @@
 "use client";
 
 /* 
-Auth-flow-kit demo
-- Page state controls UI
-- Auth state restores UI after refresh
+Auth-flow-kit demo - this is just a quick demo, not actual way of implementing it. See README.md for that.
 */
 
 import {
