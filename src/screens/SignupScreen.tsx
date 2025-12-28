@@ -67,7 +67,6 @@ export default function SignupScreen() {
         Create Account ✨
       </h2>
 
-      {/* NAME FIELD */}
       <div style={{ position: "relative", marginBottom: 26 }}>
         <label
           style={{
@@ -109,7 +108,6 @@ export default function SignupScreen() {
         />
       </div>
 
-      {/* EMAIL FIELD */}
       <div style={{ position: "relative", marginBottom: 26 }}>
         <label
           style={{
@@ -152,7 +150,6 @@ export default function SignupScreen() {
         />
       </div>
 
-      {/* PASSWORD FIELD */}
       <div style={{ position: "relative", marginBottom: 26 }}>
         <label
           style={{
@@ -195,7 +192,6 @@ export default function SignupScreen() {
         />
       </div>
 
-      {/* SUBMIT BUTTON */}
       <button
         disabled={submitting}
         type="submit"
@@ -220,7 +216,6 @@ export default function SignupScreen() {
         {submitting ? "Creating..." : "Create account"}
       </button>
 
-      {/* ERROR MESSAGE */}
       {error && (
         <p
           style={{

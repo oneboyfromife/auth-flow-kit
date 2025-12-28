@@ -185,7 +185,6 @@ export default function LoginScreen() {
         Forgot password?
       </p>
 
-      {/* BUTTON */}
       <button
         disabled={submitting}
         type="submit"
@@ -211,7 +210,6 @@ export default function LoginScreen() {
         {submitting ? "Signing in..." : "Sign in"}
       </button>
 
-      {/* ERROR */}
       {error && (
         <p
           style={{

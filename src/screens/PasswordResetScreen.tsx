@@ -4,7 +4,7 @@ import { useAuth } from "../AuthContext";
 import { httpJSON, makeURL } from "../http";
 
 export default function PasswordResetScreen() {
-  const { config } = useAuth(); // ✅ hook at top level
+  const { config } = useAuth();
 
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
@@ -61,7 +61,6 @@ export default function PasswordResetScreen() {
         Reset Password 🔑
       </h2>
 
-      {/* EMAIL FIELD */}
       <div style={{ position: "relative", marginBottom: 26 }}>
         <label
           style={{
@@ -104,7 +103,6 @@ export default function PasswordResetScreen() {
         />
       </div>
 
-      {/* BUTTON */}
       <button
         type="submit"
         style={{
@@ -112,7 +110,6 @@ export default function PasswordResetScreen() {
           padding: "14px 20px",
           borderRadius: 12,
 
-          // PREMIUM GRADIENT
           background: sent
             ? "linear-gradient(90deg, #7aff9d, #34c759)"
             : "linear-gradient(90deg, #5353aaff, #060f22ff)",
@@ -130,7 +127,6 @@ export default function PasswordResetScreen() {
         {sent ? "Link Sent ✔" : "Send reset link"}
       </button>
 
-      {/* SENT MESSAGE */}
       {sent && (
         <p
           style={{
@@ -145,7 +141,6 @@ export default function PasswordResetScreen() {
         </p>
       )}
 
-      {/* ERROR MESSAGE */}
       {error && (
         <p
           style={{

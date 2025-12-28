@@ -26,7 +26,6 @@ export default function Protected({ children, redirectTo }: ProtectedProps) {
 
   useEffect(() => {
     if (!loading && !user && redirectTo) {
-      // Redirect ONLY if consumer explicitly opts in
       window.location.href = redirectTo;
     }
   }, [loading, user, redirectTo]);

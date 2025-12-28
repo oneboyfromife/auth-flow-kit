@@ -35,7 +35,7 @@ export function setStoredAccessToken(token: string | null) {
     if (token) localStorage.setItem("afk_access_token", token);
     else localStorage.removeItem("afk_access_token");
   } catch {
-    // ignore storage errors (Safari private mode, etc.)
+    // Gonna ignore storage errors (Safari private mode, etc.) for now, not exactly needed.
   }
 }
 
@@ -48,7 +48,6 @@ export async function httpJSON<T>(
     "Content-Type": "application/json",
   };
 
-  // Add Authorization header only if requested
   if (withAuth) {
     const tok = getStoredAccessToken();
     if (tok) headers["Authorization"] = `Bearer ${tok}`;
@@ -69,7 +68,7 @@ export async function httpJSON<T>(
         const data = await res.json();
         if (data?.message) message = data.message;
       } catch {
-        // ignore JSON parse errors
+        // ignore JSON parse errors, cos not important to me now
       }
     }
 
@@ -88,12 +87,12 @@ export async function httpJSON<T>(
       console.error(
         `[auth-flow-kit] Password reset endpoint not found.
 
-Expected a POST route matching:
-  ${url}
+        Expected a POST route matching:
+          ${url}
 
-Fix this by either:
-- Adding the route on your backend, or
-- Updating config.endpoints.forgot`
+        Fix this by either:
+        - Adding the route on your backend, or
+        - Updating config.endpoints.forgot`
       );
     }
 
