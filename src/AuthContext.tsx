@@ -1,9 +1,9 @@
 import React, {
   createContext,
   useContext,
-  useEffect,
   useMemo,
   useState,
+  useEffect,
   PropsWithChildren,
 } from "react";
 
@@ -21,81 +21,68 @@ import {
   getStoredAccessToken,
 } from "./http";
 
-const STORAGE_KEY = "afk_user";
+const USER_KEY = "afk_user";
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext);
-  if (context === null) {
+  const value = useContext(AuthContext);
+  if (value === undefined) {
     throw new Error("useAuth must be used inside AuthProvider");
   }
-  return context;
+  return value;
 }
 
-function readStoredUser(): User | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function persistSession(user: User, token: string) {
-  setStoredAccessToken(token);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-}
-
-function clearSession() {
-  setStoredAccessToken(null);
-  localStorage.removeItem(STORAGE_KEY);
+function loadUser(): User | null {
+  const raw = localStorage.getItem(USER_KEY);
+  return raw ? JSON.parse(raw) : null;
 }
 
 export function AuthProvider({
   config,
   children,
 }: PropsWithChildren<{ config: AuthProviderConfig }>) {
-  const { baseURL, endpoints, onLoginSuccess, onLogout } = config;
+  const [user, setUser] = useState<User | null>(() => loadUser());
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { baseURL, endpoints, onLoginSuccess, onLogout } = config;
 
   const getToken = () => getStoredAccessToken();
 
-  // Restore persisted session
   useEffect(() => {
-    const existingUser = readStoredUser();
-    if (existingUser) {
-      setUser(existingUser);
-    }
     setLoading(false);
   }, []);
 
-  const authenticate = async (url: string, payload: unknown): Promise<void> => {
-    const response = await httpJSON<StandardAuthResponse>(url, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+  const runAuthRequest = async (
+    endpoint: string,
+    body: unknown
+  ): Promise<void> => {
+    const response = await httpJSON<StandardAuthResponse>(
+      makeURL(baseURL, endpoint),
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      }
+    );
 
-    persistSession(response.user, response.accessToken);
+    setStoredAccessToken(response.accessToken);
+    localStorage.setItem(USER_KEY, JSON.stringify(response.user));
     setUser(response.user);
 
     onLoginSuccess?.();
   };
 
-  const login: AuthContextType["login"] = (email, password) => {
-    const url = makeURL(baseURL, endpoints.login);
-    return authenticate(url, { email, password });
+  const login: AuthContextType["login"] = async (email, password) => {
+    await runAuthRequest(endpoints.login, { email, password });
   };
 
-  const signup: AuthContextType["signup"] = (payload) => {
-    const url = makeURL(baseURL, endpoints.signup);
-    return authenticate(url, payload);
+  const signup: AuthContextType["signup"] = async (payload) => {
+    await runAuthRequest(endpoints.signup, payload);
   };
 
   const logout = () => {
-    clearSession();
+    setStoredAccessToken(null);
+    localStorage.removeItem(USER_KEY);
     setUser(null);
     onLogout?.();
   };
