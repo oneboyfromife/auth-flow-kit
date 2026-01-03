@@ -1,19 +1,10 @@
-/* 
-Developers using this library should wrap their app with:
-  <AuthProvider config={...}>
-    <App />
-  </AuthProvider>
- 
-  Then they can access auth anywhere with:
-  const { user, login, logout, getToken } = useAuth();
-*/
-
 import React, {
   createContext,
   useContext,
   useEffect,
   useMemo,
   useState,
+  PropsWithChildren,
 } from "react";
 
 import {
@@ -30,18 +21,41 @@ import {
   getStoredAccessToken,
 } from "./http";
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const STORAGE_KEY = "afk_user";
+
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export function useAuth(): AuthContextType {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
-  return ctx;
+  const context = useContext(AuthContext);
+  if (context === null) {
+    throw new Error("useAuth must be used inside AuthProvider");
+  }
+  return context;
+}
+
+function readStoredUser(): User | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistSession(user: User, token: string) {
+  setStoredAccessToken(token);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+}
+
+function clearSession() {
+  setStoredAccessToken(null);
+  localStorage.removeItem(STORAGE_KEY);
 }
 
 export function AuthProvider({
   config,
   children,
-}: React.PropsWithChildren<{ config: AuthProviderConfig }>) {
+}: PropsWithChildren<{ config: AuthProviderConfig }>) {
   const { baseURL, endpoints, onLoginSuccess, onLogout } = config;
 
   const [user, setUser] = useState<User | null>(null);
@@ -49,60 +63,44 @@ export function AuthProvider({
 
   const getToken = () => getStoredAccessToken();
 
-  // Restore user from localStorage on app load
+  // Restore persisted session
   useEffect(() => {
-    const savedUser = localStorage.getItem("afk_user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    const existingUser = readStoredUser();
+    if (existingUser) {
+      setUser(existingUser);
     }
     setLoading(false);
   }, []);
 
-  // LOGIN
-  const login: AuthContextType["login"] = async (email, password) => {
-    const url = makeURL(baseURL, endpoints.login);
-
-    const res = await httpJSON<StandardAuthResponse>(url, {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-
-    // store token + user
-    setStoredAccessToken(res.accessToken);
-    localStorage.setItem("afk_user", JSON.stringify(res.user));
-
-    setUser(res.user);
-
-    if (onLoginSuccess) onLoginSuccess();
-  };
-
-  // SIGNUP
-  const signup: AuthContextType["signup"] = async (payload) => {
-    const url = makeURL(baseURL, endpoints.signup);
-
-    const res = await httpJSON<StandardAuthResponse>(url, {
+  const authenticate = async (url: string, payload: unknown): Promise<void> => {
+    const response = await httpJSON<StandardAuthResponse>(url, {
       method: "POST",
       body: JSON.stringify(payload),
     });
 
-    setStoredAccessToken(res.accessToken);
-    localStorage.setItem("afk_user", JSON.stringify(res.user));
+    persistSession(response.user, response.accessToken);
+    setUser(response.user);
 
-    setUser(res.user);
-
-    if (onLoginSuccess) onLoginSuccess();
+    onLoginSuccess?.();
   };
 
-  // LOGOUT
+  const login: AuthContextType["login"] = (email, password) => {
+    const url = makeURL(baseURL, endpoints.login);
+    return authenticate(url, { email, password });
+  };
+
+  const signup: AuthContextType["signup"] = (payload) => {
+    const url = makeURL(baseURL, endpoints.signup);
+    return authenticate(url, payload);
+  };
+
   const logout = () => {
-    setStoredAccessToken(null);
-    localStorage.removeItem("afk_user");
+    clearSession();
     setUser(null);
-
-    if (onLogout) onLogout();
+    onLogout?.();
   };
 
-  const value = useMemo<AuthContextType>(
+  const contextValue = useMemo<AuthContextType>(
     () => ({
       user,
       loading,
@@ -115,5 +113,7 @@ export function AuthProvider({
     [user, loading, config]
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+  );
 }
