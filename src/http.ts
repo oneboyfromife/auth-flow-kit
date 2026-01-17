@@ -55,7 +55,6 @@ export async function httpJSON<T>(
 
   const res = await fetch(url, {
     ...opts,
-    // Allow consumer-provided headers to override defaults if needed
     headers: { ...baseHeaders, ...(opts.headers || {}) },
   });
 
@@ -68,7 +67,7 @@ export async function httpJSON<T>(
         const data = await res.json();
         if (data?.message) message = data.message;
       } catch {
-        // Swallow parse errors, backend may return empty JSON responses
+        // Backend may return empty or malformed JSON
       }
     }
 
@@ -97,10 +96,16 @@ Fix this by either:
     throw new Error(message);
   }
 
-  // Defensive: handle APIs that return 204 or empty bodies
+  // Handle no-content responses explicitly
   if (res.status === 204) {
     return undefined as T;
   }
 
-  return res.json() as Promise<T>;
+  // Guard against empty JSON bodies with 200 responses
+  const text = await res.text();
+  if (!text) {
+    return undefined as T;
+  }
+
+  return JSON.parse(text) as T;
 }
