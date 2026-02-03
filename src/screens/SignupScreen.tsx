@@ -26,9 +26,10 @@ export default function SignupScreen() {
     }
 
     try {
-      await signup({ name, email, password });
-    } catch (err: any) {
-      setError(err?.message || "Signup failed");
+      await signup({ name: trimmedName, email: trimmedEmail, password: trimmedPassword });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Signup failed";
+      setError(message);
     } finally {
       setSubmitting(false);
     }
