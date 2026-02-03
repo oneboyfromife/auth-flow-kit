@@ -1,25 +1,27 @@
 /*
- This file contains the low-level HTTP utilities used internally by
- auth-flow-kit to communicate with the backend.
+  Internal HTTP utilities for auth-flow-kit.
 
- It provides:
-  - makeURL: safely joins baseURL + endpoint path
-  - getStoredAccessToken: reads the JWT from localStorage
-  - setStoredAccessToken: stores/removes the JWT
-  - httpJSON: wrapper around fetch with JSON + optional auth header
+  Purpose:
+  - makeURL: safely compose baseURL + endpoint
+  - getStoredAccessToken: read JWT from localStorage
+  - setStoredAccessToken: persist or clear JWT
+  - httpJSON: fetch wrapper with JSON handling + optional auth
 
- NOTES FOR DEVELOPERS USING THE LIBRARY:
- You do NOT need to import or modify anything in this file.
- It is an internal helper used by the AuthProvider and auth screens.
+  IMPORTANT:
+  This file is internal to the library.
+  Do NOT import or modify it directly.
 
- This keeps the library lightweight, predictable,
- and familiar to developers used to Redux Toolkit-style authentication.
+  It exists to keep authentication logic:
+  - predictable
+  - lightweight
+  - familiar to Redux Toolkit-style flows
 */
 
 export function makeURL(baseURL: string, path: string) {
-  return `${baseURL.replace(/\/$/, "")}${
-    path.startsWith("/") ? path : `/${path}`
-  }`;
+  const normalizedBase = baseURL.replace(/\/$/, "");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+  return `${normalizedBase}${normalizedPath}`;
 }
 
 export function getStoredAccessToken(): string | null {
@@ -32,10 +34,14 @@ export function getStoredAccessToken(): string | null {
 
 export function setStoredAccessToken(token: string | null) {
   try {
-    if (token) localStorage.setItem("afk_access_token", token);
-    else localStorage.removeItem("afk_access_token");
+    if (token) {
+      localStorage.setItem("afk_access_token", token);
+      return;
+    }
+
+    localStorage.removeItem("afk_access_token");
   } catch {
-    // Gonna ignore storage errors (Safari private mode, etc.) for now, not exactly needed.
+    // Ignore storage failures (private mode, restricted environments, etc.)
   }
 }
 
@@ -49,32 +55,35 @@ export async function httpJSON<T>(
   };
 
   if (withAuth) {
-    const tok = getStoredAccessToken();
-    if (tok) headers["Authorization"] = `Bearer ${tok}`;
+    const token = getStoredAccessToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
   }
 
-  const res = await fetch(url, {
+  const response = await fetch(url, {
     ...opts,
-    headers: { ...headers, ...(opts.headers || {}) },
+    headers: {
+      ...headers,
+      ...(opts.headers || {}),
+    },
   });
 
-  if (!res.ok) {
-    let message = `Request failed (${res.status})`;
-    const contentType = res.headers.get("content-type") || "";
+  if (!response.ok) {
+    let message = `Request failed (${response.status})`;
+    const contentType = response.headers.get("content-type") || "";
 
-    // Backend returned JSON error
     if (contentType.includes("application/json")) {
       try {
-        const data = await res.json();
+        const data = await response.json();
         if (data?.message) message = data.message;
       } catch {
-        // ignore JSON parse errors, cos not important to me now
+        // Ignore malformed JSON errors
       }
     }
 
-    // Backend returned HTML (Express default error pages)
     if (contentType.includes("text/html")) {
-      if (res.status === 404 && url.includes("forgot")) {
+      if (response.status === 404 && url.includes("forgot")) {
         message =
           "The forgot password endpoint you added in config.endpoints.forgot does not exist in your server. Please check and update your config.endpoints.forgot";
       } else {
@@ -82,8 +91,7 @@ export async function httpJSON<T>(
       }
     }
 
-    // Developer-only guidance
-    if (res.status === 404 && url.includes("forgot")) {
+    if (response.status === 404 && url.includes("forgot")) {
       console.error(
         `[auth-flow-kit] Password reset endpoint not found.
 
@@ -99,5 +107,5 @@ export async function httpJSON<T>(
     throw new Error(message);
   }
 
-  return res.json() as Promise<T>;
+  return response.json() as Promise<T>;
 }
