@@ -41,8 +41,20 @@ export default function LoginScreen() {
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
 
-    if (!trimmedEmail || !trimmedPassword) {
-      setError("Email and password cannot be empty.");
+    if (!trimmedEmail) {
+      setError("Email is required.");
+      setSubmitting(false);
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Enter a valid email address.");
+      setSubmitting(false);
+      return;
+    }
+
+    if (!trimmedPassword) {
+      setError("Password is required.");
       setSubmitting(false);
       return;
     }
@@ -91,6 +103,7 @@ export default function LoginScreen() {
 
       <div style={{ position: "relative", marginBottom: 26 }}>
         <label
+          htmlFor="afk-login-email"
           style={{
             position: "absolute",
             top: "-10px",
@@ -106,6 +119,7 @@ export default function LoginScreen() {
         </label>
 
         <input
+          id="afk-login-email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           type="email"
@@ -133,6 +147,7 @@ export default function LoginScreen() {
 
       <div style={{ position: "relative", marginBottom: 10 }}>
         <label
+          htmlFor="afk-login-password"
           style={{
             position: "absolute",
             top: "-10px",
@@ -148,6 +163,7 @@ export default function LoginScreen() {
         </label>
 
         <input
+          id="afk-login-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           type="password"
@@ -213,6 +229,8 @@ export default function LoginScreen() {
 
       {error && (
         <p
+          role="alert"
+          aria-live="polite"
           style={{
             marginTop: 18,
             color: "crimson",
