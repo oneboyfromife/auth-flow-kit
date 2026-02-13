@@ -8,6 +8,7 @@ export default function PasswordResetScreen() {
 
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isValidEmail = (value: string) =>
@@ -29,6 +30,7 @@ export default function PasswordResetScreen() {
       return;
     }
 
+    setLoading(true);
     try {
       const url = makeURL(config.baseURL, config.endpoints.forgot);
 
@@ -42,12 +44,21 @@ export default function PasswordResetScreen() {
       const message =
         err instanceof Error ? err.message : "Failed to request reset";
       setError(message);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const tryAnotherEmail = () => {
+    setSent(false);
+    setError(null);
+    setEmail("");
   };
 
   return (
     <form
       onSubmit={requestReset}
+      aria-busy={loading}
       style={{
         maxWidth: 400,
         margin: "60px auto",
@@ -98,9 +109,15 @@ export default function PasswordResetScreen() {
         <input
           id="afk-reset-email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setError(null);
+          }}
           type="email"
+          autoComplete="email"
           placeholder="you@example.com"
+          aria-describedby={error ? "afk-reset-error" : undefined}
+          disabled={loading}
           style={{
             width: "90%",
             padding: "14px 16px",
@@ -124,6 +141,8 @@ export default function PasswordResetScreen() {
 
       <button
         type="submit"
+        disabled={loading || sent}
+        aria-busy={loading}
         style={{
           width: "100%",
           padding: "14px 20px",
@@ -138,30 +157,53 @@ export default function PasswordResetScreen() {
           fontSize: 16,
           fontWeight: 700,
           letterSpacing: "0.3px",
-          cursor: "pointer",
+          cursor: loading ? "wait" : "pointer",
+          opacity: loading ? 0.85 : 1,
           transition: "0.3s",
           boxShadow: "0 8px 20px rgba(75,75,255,0.25)",
         }}
       >
-        {sent ? "Link Sent ✔" : "Send reset link"}
+        {loading ? "Sending…" : sent ? "Link Sent ✔" : "Send reset link"}
       </button>
 
       {sent && (
-        <p
-          style={{
-            marginTop: 20,
-            color: "#2ecc71",
-            textAlign: "center",
-            fontSize: 15,
-            fontWeight: 600,
-          }}
-        >
-          Check your email for reset instructions.
-        </p>
+        <>
+          <p
+            style={{
+              marginTop: 20,
+              color: "#2ecc71",
+              textAlign: "center",
+              fontSize: 15,
+              fontWeight: 600,
+            }}
+          >
+            Check your email for reset instructions.
+          </p>
+          <button
+            type="button"
+            onClick={tryAnotherEmail}
+            style={{
+              marginTop: 12,
+              width: "100%",
+              padding: "10px 16px",
+              borderRadius: 10,
+              background: "transparent",
+              color: "#4b4bff",
+              border: "1px solid #4b4bff",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "0.2s",
+            }}
+          >
+            Try another email
+          </button>
+        </>
       )}
 
       {error && (
         <p
+          id="afk-reset-error"
           role="alert"
           aria-live="polite"
           style={{
